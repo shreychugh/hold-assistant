@@ -1,15 +1,27 @@
-// Callback API Route
-// This endpoint is triggered when a human agent is detected on the company call.
-// It initiates an outbound call to the user's phone number via SignalWire,
-// then bridges both calls so the user is connected directly to the agent.
+import { NextRequest, NextResponse } from 'next/server'
+import { getSession, updateSession } from '@/lib/firebase-admin'
 
-import { NextRequest, NextResponse } from "next/server";
+function xml(content: string) {
+  return new NextResponse(`<?xml version="1.0" encoding="UTF-8"?><Response>${content}</Response>`, {
+    headers: { 'Content-Type': 'text/xml' },
+  })
+}
 
 export async function POST(req: NextRequest) {
-  // TODO: Validate incoming request
-  // TODO: Retrieve session from Firestore by sessionId
-  // TODO: Trigger SignalWire outbound call to user phone number
-  // TODO: Bridge company call + user call (conference)
-  // TODO: Update Firestore session status to "connected"
-  return NextResponse.json({ message: "callback initiated" });
+  const sessionId = req.nextUrl.searchParams.get('sessionId')
+  if (!sessionId) return xml('<Hangup/>')
+
+  const session = await getSession(sessionId)
+  if (!session) return xml('<Hangup/>')
+
+  // Already connected — ignore duplicate status callbacks
+  if (session.status === 'connected') {
+    return new NextResponse('', { status: 200 })
+  }
+
+  await updateSession(sessionId, { status: 'connected' })
+
+  return xml(
+    `<Say voice="alice">An agent is on the line. Connecting you now.</Say><Dial><Conference waitUrl="" startConferenceOnEnter="true" endConferenceOnExit="true">${sessionId}</Conference></Dial>`
+  )
 }

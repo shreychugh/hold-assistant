@@ -1,4 +1,6 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {};
+const nextConfig = {
+  serverExternalPackages: ['@deepgram/sdk', 'firebase-admin'],
+};
 
 export default nextConfig;
