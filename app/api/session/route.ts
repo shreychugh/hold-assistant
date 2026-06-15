@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
   const sessionId = randomUUID()
   await createSession({ sessionId, company, issueType, userPhone, status: 'initiated' })
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+  const baseUrl = (process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000').trim()
   const webhookUrl = `${baseUrl}/api/webhook?sessionId=${sessionId}`
   console.log('Webhook URL sent to SignalWire:', webhookUrl)
 
