@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { makeCall } from '@/lib/signalwire'
 
 export async function POST(req: NextRequest) {
-  const { phoneNumber } = await req.json()
+  const body = await req.json()
+  const { phoneNumber } = body
 
   if (!phoneNumber) {
     return NextResponse.json({ error: 'phoneNumber required' }, { status: 400 })

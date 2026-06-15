@@ -50,7 +50,7 @@ export default function Home() {
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>📞</div>
           <h1 style={{ fontSize: 28, fontWeight: 700, margin: 0, color: '#0f172a' }}>Hold Assistant</h1>
-          <p style={{ color: '#64748b', marginTop: 8, fontSize: 15 }}>We wait on hold. You don't.</p>
+          <p style={{ color: '#64748b', marginTop: 8, fontSize: 15 }}>We wait on hold. You don&apos;t.</p>
         </div>
 
         <form onSubmit={handleSubmit} style={{ background: '#fff', borderRadius: 16, padding: 32, boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
@@ -87,7 +87,7 @@ export default function Home() {
               required
               style={{ width: '100%', padding: '10px 12px', fontSize: 15, borderRadius: 8, border: '1px solid #e2e8f0', boxSizing: 'border-box' }}
             />
-            <p style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>We'll call this number when an agent picks up.</p>
+            <p style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>We&apos;ll call this number when an agent picks up.</p>
           </div>
 
           {error && (

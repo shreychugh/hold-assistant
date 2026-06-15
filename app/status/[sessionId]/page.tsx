@@ -76,7 +76,7 @@ export default function StatusPage({ params }: { params: { sessionId: string } }
           </h1>
           {session.status === 'waiting' && (
             <p style={{ color: '#64748b', marginTop: 6, fontSize: 14 }}>
-              We'll call <strong>{session.userPhone}</strong> the moment an agent picks up.
+              We&apos;ll call <strong>{session.userPhone}</strong> the moment an agent picks up.
             </p>
           )}
         </div>
@@ -133,7 +133,7 @@ export default function StatusPage({ params }: { params: { sessionId: string } }
               <div style={{ height: '100%', background: '#2563eb', borderRadius: 2, width: `${Math.min(100, (elapsed / (15 * 60)) * 100)}%`, transition: 'width 1s linear' }} />
             </div>
             <p style={{ fontSize: 12, color: '#94a3b8', marginTop: 8, textAlign: 'center' }}>
-              You can close this page — we'll still call you back.
+              You can close this page — we&apos;ll still call you back.
             </p>
           </div>
         )}

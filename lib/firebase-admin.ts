@@ -1,6 +1,6 @@
 import { initializeApp, getApps, cert } from 'firebase-admin/app'
 import { getFirestore } from 'firebase-admin/firestore'
-import { Session, SessionStatus } from '@/types/session'
+import { Session } from '@/types/session'
 
 if (!getApps().length) {
   initializeApp({
