@@ -78,9 +78,13 @@ export async function POST(req: NextRequest) {
     await updateSession(sessionId, { status: 'agent_found' })
 
     const callbackUrl = `${base}/api/callback?sessionId=${sessionId}`
-    makeCall(session.userPhone, callbackUrl)
-      .then(userCallSid => updateSession(sessionId, { agentCallSid: userCallSid }))
-      .catch(console.error)
+    try {
+      const userCallSid = await makeCall(session.userPhone, callbackUrl)
+      await updateSession(sessionId, { agentCallSid: userCallSid })
+      console.log('[agent] Callback call placed:', userCallSid)
+    } catch (err) {
+      console.error('[agent] Callback call failed:', err)
+    }
 
     return xml(`<Dial><Conference waitUrl="" startConferenceOnEnter="true" endConferenceOnExit="false">${sessionId}</Conference></Dial>`)
   }
