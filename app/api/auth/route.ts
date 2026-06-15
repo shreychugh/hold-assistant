@@ -5,8 +5,6 @@
 
 import { NextRequest, NextResponse } from "next/server";
 
-export async function POST(req: NextRequest) {
-  // TODO: Implement Firebase Auth token verification
-  // TODO: Create or fetch user profile from Firestore
+export async function POST(_req: NextRequest) {
   return NextResponse.json({ message: "auth placeholder" });
 }
