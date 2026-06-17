@@ -34,7 +34,6 @@ export async function POST(req: NextRequest) {
   const proto = req.headers.get('x-forwarded-proto') || 'http'
   const base = `${proto}://${host}`
 
-  console.log(`[webhook] action=${action} callStatus=${callStatus}`)
 
   const session = await getSession(sessionId)
   if (!session) return xml('<Hangup/>')
@@ -66,10 +65,7 @@ export async function POST(req: NextRequest) {
   if (action === 'transcribe') {
     const recordingUrl = params.get('RecordingUrl')
 
-    if (!recordingUrl) {
-      console.log('[transcribe] No RecordingUrl — keep recording')
-      return xml(recordXml)
-    }
+    if (!recordingUrl) return xml(recordXml)
 
     let transcript = ''
     try {
@@ -80,28 +76,22 @@ export async function POST(req: NextRequest) {
     }
 
     const lower = transcript.toLowerCase().trim()
-    console.log(`[transcribe] "${lower.substring(0, 100)}"`)
 
     if (!lower) return xml(recordXml)
 
     const wordCount = lower.split(/\s+/).length
     const isRecording = RECORDING_PHRASES.some(p => lower.includes(p)) || wordCount > 12
 
-    if (isRecording) {
-      console.log('[transcribe] Hold music/announcement — keep recording')
-      return xml(recordXml)
-    }
+    if (isRecording) return xml(recordXml)
 
-    console.log('[transcribe] Real agent detected! Bridging...')
     await updateSession(sessionId, { status: 'agent_found' })
 
     const callbackUrl = `${base}/api/callback?sessionId=${sessionId}`
     try {
       const userCallSid = await makeCall(session.userPhone, callbackUrl)
       await updateSession(sessionId, { agentCallSid: userCallSid })
-      console.log('[transcribe] Callback call placed:', userCallSid)
     } catch (err) {
-      console.error('[transcribe] Callback call failed:', err)
+      console.error('[callback] makeCall failed:', err)
     }
 
     return xml(`<Dial><Conference startConferenceOnEnter="true" endConferenceOnExit="false">${sessionId}</Conference></Dial>`)
