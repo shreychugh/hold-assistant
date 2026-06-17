@@ -1,28 +1,34 @@
-const DEEPGRAM_API_KEY = process.env.DEEPGRAM_API_KEY!
-const SW_AUTH = Buffer.from(
-  `${process.env.SIGNALWIRE_PROJECT_ID}:${process.env.SIGNALWIRE_API_TOKEN}`
-).toString('base64')
-
 export async function transcribeRecording(recordingUrl: string): Promise<string> {
-  // SignalWire recordings require Basic auth; request mp3 explicitly
-  const audioRes = await fetch(recordingUrl + '.mp3', {
-    headers: { Authorization: `Basic ${SW_AUTH}` },
+  const swAuth = Buffer.from(
+    `${process.env.SIGNALWIRE_PROJECT_ID}:${process.env.SIGNALWIRE_API_TOKEN}`
+  ).toString('base64')
+
+  // Fetch recording from SignalWire with Basic auth
+  const audioRes = await fetch(recordingUrl, {
+    headers: { Authorization: `Basic ${swAuth}` },
   })
-  if (!audioRes.ok) throw new Error(`Failed to fetch recording: ${audioRes.status}`)
+  if (!audioRes.ok) {
+    throw new Error(`Failed to fetch recording: ${audioRes.status} ${await audioRes.text()}`)
+  }
   const audioBuffer = await audioRes.arrayBuffer()
+  const contentType = audioRes.headers.get('content-type') ?? 'audio/wav'
+
+  console.log(`[deepgram] recording fetched ${audioBuffer.byteLength} bytes contentType=${contentType}`)
 
   const dgRes = await fetch(
     'https://api.deepgram.com/v1/listen?model=nova-2&smart_format=false&language=en',
     {
       method: 'POST',
       headers: {
-        Authorization: `Token ${DEEPGRAM_API_KEY}`,
-        'Content-Type': 'audio/mpeg',
+        Authorization: `Token ${process.env.DEEPGRAM_API_KEY}`,
+        'Content-Type': contentType,
       },
       body: audioBuffer,
     }
   )
-  if (!dgRes.ok) throw new Error(`Deepgram error: ${dgRes.status}`)
+  if (!dgRes.ok) {
+    throw new Error(`Deepgram error: ${dgRes.status} ${await dgRes.text()}`)
+  }
 
   const data = await dgRes.json() as {
     results?: { channels?: [{ alternatives?: [{ transcript?: string }] }] }
