@@ -51,6 +51,15 @@ export async function getSessionByCallSid(callSid: string): Promise<Session | nu
   return snap.empty ? null : (snap.docs[0].data() as Session)
 }
 
+export async function getAllSessions(limit = 50): Promise<Session[]> {
+  const snap = await db()
+    .collection('sessions')
+    .orderBy('createdAt', 'desc')
+    .limit(limit)
+    .get()
+  return snap.docs.map(d => d.data() as Session)
+}
+
 export async function hasActiveSession(userPhone: string): Promise<boolean> {
   const snap = await db()
     .collection('sessions')

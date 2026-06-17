@@ -22,6 +22,6 @@ export async function POST(req: NextRequest) {
   await updateSession(sessionId, { status: 'connected' })
 
   return xml(
-    `<Dial><Conference waitUrl="" startConferenceOnEnter="true" endConferenceOnExit="true">${sessionId}</Conference></Dial>`
+    `<Dial><Conference startConferenceOnEnter="true" endConferenceOnExit="true">${sessionId}</Conference></Dial>`
   )
 }

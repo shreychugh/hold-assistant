@@ -94,6 +94,14 @@ export function lamlHoldCompanyCall(conferenceName: string): string {
 </Response>`
 }
 
+export async function hangupCall(callSid: string): Promise<void> {
+  await fetch(`${SW_BASE}/Calls/${callSid}`, {
+    method: 'POST',
+    headers: { Authorization: `Basic ${AUTH}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ Status: 'completed' }).toString(),
+  })
+}
+
 export function lamlHangup(): string {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <Response>

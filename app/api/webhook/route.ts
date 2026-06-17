@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
       console.error('[agent] Callback call failed:', err)
     }
 
-    return xml(`<Dial><Conference waitUrl="" startConferenceOnEnter="true" endConferenceOnExit="false">${sessionId}</Conference></Dial>`)
+    return xml(`<Dial><Conference startConferenceOnEnter="true" endConferenceOnExit="false">${sessionId}</Conference></Dial>`)
   }
 
   // Initial call connected — navigate IVR then listen for agent
