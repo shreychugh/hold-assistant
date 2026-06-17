@@ -12,8 +12,9 @@ export async function transcribeRecording(recordingUrl: string): Promise<string>
   }
   const audioBuffer = await audioRes.arrayBuffer()
   const contentType = audioRes.headers.get('content-type') ?? 'audio/wav'
+  console.log(`[deepgram] fetched ${audioBuffer.byteLength}b contentType=${contentType}`)
 
-const dgRes = await fetch(
+  const dgRes = await fetch(
     'https://api.deepgram.com/v1/listen?model=nova-2&smart_format=false&language=en',
     {
       method: 'POST',
