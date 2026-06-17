@@ -6,6 +6,7 @@ export type SessionStatus =
   | 'agent_found'
   | 'connected'
   | 'failed'
+  | 'cancelled'
 
 export interface Session {
   sessionId: string

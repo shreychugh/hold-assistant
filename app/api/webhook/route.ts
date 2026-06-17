@@ -39,9 +39,12 @@ export async function POST(req: NextRequest) {
   const session = await getSession(sessionId)
   if (!session) return xml('<Hangup/>')
 
-  // Ignore all callbacks once we've already found the agent
+  // Stop if session is already terminal
   if (session.status === 'agent_found' || session.status === 'connected') {
     return new NextResponse('', { status: 200 })
+  }
+  if (session.status === 'failed' || session.status === 'cancelled') {
+    return xml('<Hangup/>')
   }
 
   const terminalStatuses = ['completed', 'failed', 'busy', 'no-answer', 'canceled']
