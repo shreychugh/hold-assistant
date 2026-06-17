@@ -34,15 +34,15 @@ Goal: Get a working link in front of real users to see end-to-end signal. Ship f
 
 ### Useful Info for Users
 
-- [ ] **Research best times to call** — find lowest wait times for CIBC, TD, Scotiabank, RBC, CRA, Air Canada (Reddit, community forums, known patterns). Document findings.
+- [x] **Research best times to call** — find lowest wait times for CIBC, TD, Scotiabank, RBC, CRA, Air Canada (Reddit, community forums, known patterns). Document findings.
 
-- [ ] **Add static "best time to call" to home page** — show a small tip under each company in the dropdown (e.g. "💡 Best time: Tue–Thu 8–10am"). Hardcoded for now, no backend needed.
+- [x] **Add static "best time to call" to home page** — show a small tip under each company in the dropdown (e.g. "💡 Best time: Tue–Thu 8–10am"). Hardcoded for now, no backend needed.
 
 ### Branding & Trust
 
 - [ ] **Buy domain** — holdassistant.ca or holdassistant.com (~$12/yr on Namecheap). Point to Vercel: Vercel dashboard → Settings → Domains → add domain.
 
-- [ ] **Logo** — simple icon + wordmark. Use Canva or generate as SVG in code. Add to home page and status page header.
+- [x] **Logo** — simple icon + wordmark. Use Canva or generate as SVG in code. Add to home page and status page header.
 
 - [ ] **Footer** — add to all pages with: About, Privacy Policy, DNC notice (required for CASL compliance — you're making automated calls in Canada).
 
