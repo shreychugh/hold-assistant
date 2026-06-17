@@ -10,11 +10,11 @@ Goal: Get a working link in front of real users to see end-to-end signal. Ship f
 
 - [ ] **Phone number format validation** — normalize whatever user types (416-555-1234, 4165551234, etc.) to E.164 format (+14165551234) on the form before submitting. Show inline error if invalid.
 
-- [ ] **Cancel button on status page** — let users cancel an in-progress session. Button should call a `/api/session/cancel` endpoint, update Firestore status to `cancelled`, hang up the SignalWire call, and redirect back to home.
+- [x] **Cancel button on status page** — let users cancel an in-progress session. Button should call a `/api/session/cancel` endpoint, update Firestore status to `cancelled`, hang up the SignalWire call, and redirect back to home.
 
-- [ ] **Handle call drop / stuck on hold** — if call ends unexpectedly (company hangs up, network drops), user is currently stuck on status page forever. Fix: set a max wait timeout (e.g. 60 min), and show a clear failure message with a "Try again" button if session goes stale.
+- [x] **Handle call drop / stuck on hold** — 90min auto-expiry in webhook + dashboard. Stale sessions flagged and expired automatically.
 
-- [ ] **Verify Vercel serverless timeout** — Vercel functions time out at 60s. The webhook pattern (SignalWire calls back repeatedly) should handle long holds fine, but confirm this works for a 30+ min hold. If needed, upgrade to Vercel Pro (60s → 300s limit) or verify the LaML redirect loop keeps the call alive independently.
+- [ ] **Verify Vercel serverless timeout** — Vercel functions time out at 60s. Each 3s Record clip fires a new webhook invocation so long holds should be fine, but confirm with a 30+ min test.
 
 - [ ] **Tighten the 3-call cap per phone number** — confirm `/api/session` enforces this so one person can't run up your SignalWire bill.
 
