@@ -47,6 +47,12 @@ export async function POST(req: NextRequest) {
     return xml('<Hangup/>')
   }
 
+  // Auto-expire sessions older than 90 minutes
+  if (Date.now() - session.createdAt > 90 * 60 * 1000) {
+    await updateSession(sessionId, { status: 'failed', errorMessage: 'Session timed out after 90 minutes' })
+    return xml('<Hangup/>')
+  }
+
   const terminalStatuses = ['completed', 'failed', 'busy', 'no-answer', 'canceled']
   if (callStatus && terminalStatuses.includes(callStatus)) {
     await updateSession(sessionId, { status: 'failed', errorMessage: `Call ended: ${callStatus}` })

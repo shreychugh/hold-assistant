@@ -62,10 +62,12 @@ export default function DashboardPage() {
 
   function SessionRow({ s }: { s: Session }) {
     const isActive = ACTIVE_STATUSES.includes(s.status)
+    const isStale = isActive && (Date.now() - s.createdAt) > 90 * 60 * 1000
     return (
       <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
         <td style={{ padding: '12px 16px', fontSize: 13, color: '#64748b', fontFamily: 'monospace' }}>
           {s.sessionId.slice(0, 8)}…
+          {isStale && <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: '#f59e0b', background: '#fef3c7', padding: '2px 6px', borderRadius: 4 }}>STALE</span>}
         </td>
         <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 600 }}>{s.company.toUpperCase()}</td>
         <td style={{ padding: '12px 16px', fontSize: 13, color: '#475569' }}>{s.userPhone}</td>
