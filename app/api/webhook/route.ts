@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession, updateSession } from '@/lib/firebase-admin'
 import { makeCall } from '@/lib/signalwire'
 import { getIVRScript, buildDTMFString } from '@/lib/ivr-scripts'
+import { transcribeRecording } from '@/lib/deepgram'
 
 function xml(content: string) {
   return new NextResponse(`<?xml version="1.0" encoding="UTF-8"?><Response>${content}</Response>`, {
@@ -28,13 +29,12 @@ export async function POST(req: NextRequest) {
   const params = new URLSearchParams(body)
   const callSid = params.get('CallSid')
   const callStatus = params.get('CallStatus')
-  const speechResult = params.get('SpeechResult') // null if not present
 
   const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || 'localhost:3000'
   const proto = req.headers.get('x-forwarded-proto') || 'http'
   const base = `${proto}://${host}`
 
-  console.log(`[webhook] action=${action} callStatus=${callStatus} speech=${JSON.stringify(speechResult)}`)
+  console.log(`[webhook] action=${action} callStatus=${callStatus}`)
 
   const session = await getSession(sessionId)
   if (!session) return xml('<Hangup/>')
@@ -59,40 +59,49 @@ export async function POST(req: NextRequest) {
     return xml('<Hangup/>')
   }
 
-  const agentUrl = `${base}/api/webhook?sessionId=${sessionId}&amp;action=agent`
-  const redirectUrl = `${base}/api/webhook?sessionId=${sessionId}&amp;action=agent`
-  // Gather + Redirect: if Gather times out with no speech, Redirect re-enters agent loop
-  const gatherXml = `<Gather input="speech" timeout="3600" speechTimeout="3" hints="hello,hi,how can I help you,my name is,good morning,good afternoon,this is,how may I assist" action="${agentUrl}" method="POST"></Gather><Redirect method="POST">${redirectUrl}</Redirect>`
+  const transcribeUrl = `${base}/api/webhook?sessionId=${sessionId}&amp;action=transcribe`
+  const recordXml = `<Record maxLength="3" action="${transcribeUrl}" method="POST" playBeep="false"/>`
 
-  // Agent detection — only when Gather fires with actual speech
-  if (action === 'agent') {
-    const lower = (speechResult ?? '').toLowerCase().trim()
+  // Agent detection via Deepgram — fires after each 3-second recording clip
+  if (action === 'transcribe') {
+    const recordingUrl = params.get('RecordingUrl')
 
-    if (!lower) {
-      console.log('[agent] Empty/null speech — keep listening')
-      return xml(gatherXml)
+    if (!recordingUrl) {
+      console.log('[transcribe] No RecordingUrl — keep recording')
+      return xml(recordXml)
     }
+
+    let transcript = ''
+    try {
+      transcript = await transcribeRecording(recordingUrl)
+    } catch (err) {
+      console.error('[transcribe] Deepgram error:', err)
+      return xml(recordXml)
+    }
+
+    const lower = transcript.toLowerCase().trim()
+    console.log(`[transcribe] "${lower.substring(0, 100)}"`)
+
+    if (!lower) return xml(recordXml)
 
     const wordCount = lower.split(/\s+/).length
     const isRecording = RECORDING_PHRASES.some(p => lower.includes(p)) || wordCount > 12
 
-    console.log(`[agent] Speech: "${lower.substring(0, 100)}" | words: ${wordCount} | isRecording: ${isRecording}`)
-
     if (isRecording) {
-      console.log('[agent] Announcement detected, ignoring')
-      return xml(gatherXml)
+      console.log('[transcribe] Hold music/announcement — keep recording')
+      return xml(recordXml)
     }
 
-    console.log('[agent] Real agent detected! Bridging...')
+    console.log('[transcribe] Real agent detected! Bridging...')
     await updateSession(sessionId, { status: 'agent_found' })
 
     const callbackUrl = `${base}/api/callback?sessionId=${sessionId}`
     try {
       const userCallSid = await makeCall(session.userPhone, callbackUrl)
       await updateSession(sessionId, { agentCallSid: userCallSid })
-      console.log('[agent] Callback call placed:', userCallSid)
+      console.log('[transcribe] Callback call placed:', userCallSid)
     } catch (err) {
-      console.error('[agent] Callback call failed:', err)
+      console.error('[transcribe] Callback call failed:', err)
     }
 
     return xml(`<Dial><Conference startConferenceOnEnter="true" endConferenceOnExit="false">${sessionId}</Conference></Dial>`)
@@ -106,5 +115,5 @@ export async function POST(req: NextRequest) {
   const dtmf = buildDTMFString(script.steps)
   await updateSession(sessionId, { status: 'waiting' })
 
-  return xml(`<Play digits="${dtmf}"/><Pause length="40"/>${gatherXml}`)
+  return xml(`<Play digits="${dtmf}"/><Pause length="40"/>${recordXml}`)
 }

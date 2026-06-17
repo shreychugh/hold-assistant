@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { doc, onSnapshot } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { Session, SessionStatus } from '@/types/session'
@@ -23,9 +24,24 @@ const COMPANY_WAIT_TIMES: Record<string, string> = {
 }
 
 export default function StatusPage({ params }: { params: { sessionId: string } }) {
+  const router = useRouter()
   const [session, setSession] = useState<Session | null>(null)
   const [elapsed, setElapsed] = useState(0)
   const [waitStart, setWaitStart] = useState<number | null>(null)
+  const [cancelling, setCancelling] = useState(false)
+
+  async function handleCancel() {
+    setCancelling(true)
+    try {
+      await fetch('/api/session/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: params.sessionId, cancelledBy: 'user' }),
+      })
+    } finally {
+      setCancelling(false)
+    }
+  }
 
   useEffect(() => {
     const unsub = onSnapshot(doc(db, 'sessions', params.sessionId), snap => {
@@ -54,7 +70,11 @@ export default function StatusPage({ params }: { params: { sessionId: string } }
 
   const currentStep = STATUS_STEPS.findIndex(s => s.status === session.status)
   const isFailed = session.status === 'failed'
+  const isCancelled = session.status === 'cancelled'
   const isDone = session.status === 'connected'
+  const isTerminal = isDone || isFailed || isCancelled
+  const ACTIVE_STATUSES: SessionStatus[] = ['initiated', 'calling', 'navigating', 'waiting', 'agent_found']
+  const isActive = ACTIVE_STATUSES.includes(session.status)
 
   const mins = Math.floor(elapsed / 60)
   const secs = elapsed % 60
@@ -69,10 +89,10 @@ export default function StatusPage({ params }: { params: { sessionId: string } }
 
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <div style={{ fontSize: 36, marginBottom: 8 }}>
-            {isDone ? '✅' : isFailed ? '❌' : '⏳'}
+            {isDone ? '✅' : isFailed ? '❌' : isCancelled ? '🚫' : '⏳'}
           </div>
           <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0, color: '#0f172a' }}>
-            {isDone ? 'Connected!' : isFailed ? 'Call Failed' : `Calling ${companyLabel} for you`}
+            {isDone ? 'Connected!' : isFailed ? 'Call Failed' : isCancelled ? 'Request Cancelled' : `Calling ${companyLabel} for you`}
           </h1>
           {session.status === 'waiting' && (
             <p style={{ color: '#64748b', marginTop: 6, fontSize: 14 }}>
@@ -82,43 +102,45 @@ export default function StatusPage({ params }: { params: { sessionId: string } }
         </div>
 
         {/* Progress steps */}
-        <div style={{ background: '#fff', borderRadius: 16, padding: 24, boxShadow: '0 1px 4px rgba(0,0,0,0.08)', marginBottom: 16 }}>
-          {STATUS_STEPS.filter(s => s.status !== 'failed').map((step, i) => {
-            const done = currentStep > i
-            const active = currentStep === i
-            return (
-              <div key={step.status} style={{ display: 'flex', gap: 14, marginBottom: i < STATUS_STEPS.length - 1 ? 20 : 0 }}>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <div style={{
-                    width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: done ? '#2563eb' : active ? '#dbeafe' : '#f1f5f9',
-                    border: active ? '2px solid #2563eb' : 'none',
-                    fontSize: 13, fontWeight: 700,
-                    color: done ? '#fff' : active ? '#2563eb' : '#94a3b8',
-                    flexShrink: 0,
-                  }}>
-                    {done ? '✓' : i + 1}
+        {!isCancelled && (
+          <div style={{ background: '#fff', borderRadius: 16, padding: 24, boxShadow: '0 1px 4px rgba(0,0,0,0.08)', marginBottom: 16 }}>
+            {STATUS_STEPS.filter(s => s.status !== 'failed').map((step, i) => {
+              const done = currentStep > i
+              const active = currentStep === i
+              return (
+                <div key={step.status} style={{ display: 'flex', gap: 14, marginBottom: i < STATUS_STEPS.length - 1 ? 20 : 0 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <div style={{
+                      width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: done ? '#2563eb' : active ? '#dbeafe' : '#f1f5f9',
+                      border: active ? '2px solid #2563eb' : 'none',
+                      fontSize: 13, fontWeight: 700,
+                      color: done ? '#fff' : active ? '#2563eb' : '#94a3b8',
+                      flexShrink: 0,
+                    }}>
+                      {done ? '✓' : i + 1}
+                    </div>
+                    {i < STATUS_STEPS.length - 1 && (
+                      <div style={{ width: 2, flex: 1, background: done ? '#2563eb' : '#e2e8f0', marginTop: 4 }} />
+                    )}
                   </div>
-                  {i < STATUS_STEPS.length - 1 && (
-                    <div style={{ width: 2, flex: 1, background: done ? '#2563eb' : '#e2e8f0', marginTop: 4 }} />
-                  )}
-                </div>
-                <div style={{ paddingBottom: i < STATUS_STEPS.length - 1 ? 20 : 0 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: active ? '#0f172a' : done ? '#0f172a' : '#94a3b8' }}>
-                    {step.label}
+                  <div style={{ paddingBottom: i < STATUS_STEPS.length - 1 ? 20 : 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: active ? '#0f172a' : done ? '#0f172a' : '#94a3b8' }}>
+                      {step.label}
+                    </div>
+                    {active && (
+                      <div style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>{step.desc}</div>
+                    )}
                   </div>
-                  {active && (
-                    <div style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>{step.desc}</div>
-                  )}
                 </div>
-              </div>
-            )
-          })}
-        </div>
+              )
+            })}
+          </div>
+        )}
 
         {/* Wait time info */}
         {session.status === 'waiting' && (
-          <div style={{ background: '#fff', borderRadius: 12, padding: 20, boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
+          <div style={{ background: '#fff', borderRadius: 12, padding: 20, boxShadow: '0 1px 4px rgba(0,0,0,0.08)', marginBottom: 16 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <div style={{ fontSize: 12, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Time on hold</div>
@@ -138,11 +160,50 @@ export default function StatusPage({ params }: { params: { sessionId: string } }
           </div>
         )}
 
+        {/* Cancel button — shown while session is active */}
+        {isActive && (
+          <div style={{ textAlign: 'center', marginBottom: 16 }}>
+            <button
+              onClick={handleCancel}
+              disabled={cancelling}
+              style={{
+                background: 'none', border: '1px solid #e2e8f0', borderRadius: 8,
+                padding: '10px 24px', fontSize: 14, color: '#64748b',
+                cursor: cancelling ? 'not-allowed' : 'pointer', opacity: cancelling ? 0.6 : 1,
+              }}
+            >
+              {cancelling ? 'Cancelling...' : 'Cancel request'}
+            </button>
+          </div>
+        )}
+
+        {/* Cancelled banner */}
+        {isCancelled && (
+          <div style={{ background: '#fefce8', border: '1px solid #fde68a', borderRadius: 12, padding: 16, color: '#92400e', fontSize: 14, marginBottom: 16 }}>
+            Your request was cancelled. The call has been ended.
+          </div>
+        )}
+
+        {/* Failed banner */}
         {isFailed && (
-          <div style={{ background: '#fef2f2', borderRadius: 12, padding: 16, color: '#991b1b', fontSize: 14 }}>
+          <div style={{ background: '#fef2f2', borderRadius: 12, padding: 16, color: '#991b1b', fontSize: 14, marginBottom: 16 }}>
             {session.errorMessage || 'The call ended unexpectedly.'}
-            <br />
-            <a href="/" style={{ color: '#2563eb', fontWeight: 600, marginTop: 8, display: 'inline-block' }}>Try again →</a>
+          </div>
+        )}
+
+        {/* Back to home — shown on all terminal states */}
+        {isTerminal && (
+          <div style={{ textAlign: 'center' }}>
+            <button
+              onClick={() => router.push('/')}
+              style={{
+                background: '#2563eb', border: 'none', borderRadius: 8,
+                padding: '12px 28px', fontSize: 14, fontWeight: 600, color: '#fff',
+                cursor: 'pointer', width: '100%',
+              }}
+            >
+              Back to home
+            </button>
           </div>
         )}
       </div>
