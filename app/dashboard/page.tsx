@@ -1,17 +1,19 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
+import { collection, onSnapshot, limit, query } from 'firebase/firestore'
+import { db } from '@/lib/firebase'
 import { Session } from '@/types/session'
 
 const STATUS_COLORS: Record<string, string> = {
-  initiated:  '#94a3b8',
-  calling:    '#3b82f6',
-  navigating: '#8b5cf6',
-  waiting:    '#f59e0b',
-  agent_found:'#10b981',
-  connected:  '#16a34a',
-  failed:     '#ef4444',
-  cancelled:  '#94a3b8',
+  initiated:   '#94a3b8',
+  calling:     '#3b82f6',
+  navigating:  '#8b5cf6',
+  waiting:     '#f59e0b',
+  agent_found: '#10b981',
+  connected:   '#16a34a',
+  failed:      '#ef4444',
+  cancelled:   '#94a3b8',
 }
 
 const ACTIVE_STATUSES = ['initiated', 'calling', 'navigating', 'waiting', 'agent_found']
@@ -21,21 +23,17 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [cancelling, setCancelling] = useState<string | null>(null)
   const [cancelled, setCancelled] = useState<string | null>(null)
-  const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
-
-  const fetchSessions = useCallback(async () => {
-    const res = await fetch('/api/admin/sessions')
-    const data = await res.json()
-    setSessions(data.sessions || [])
-    setLastRefresh(new Date())
-    setLoading(false)
-  }, [])
 
   useEffect(() => {
-    fetchSessions()
-    const interval = setInterval(fetchSessions, 8000)
-    return () => clearInterval(interval)
-  }, [fetchSessions])
+    const q = query(collection(db, 'sessions'), limit(50))
+    const unsub = onSnapshot(q, snap => {
+      const data = snap.docs.map(d => d.data() as Session)
+      data.sort((a, b) => b.createdAt - a.createdAt)
+      setSessions(data)
+      setLoading(false)
+    })
+    return unsub
+  }, [])
 
   async function cancelSession(sessionId: string) {
     setCancelling(sessionId)
@@ -45,7 +43,6 @@ export default function DashboardPage() {
       body: JSON.stringify({ sessionId }),
     })
     if (res.ok) setCancelled(sessionId)
-    await fetchSessions()
     setCancelling(null)
     setTimeout(() => setCancelled(null), 3000)
   }
@@ -113,19 +110,17 @@ export default function DashboardPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>Admin Dashboard</h1>
-          <p style={{ color: '#64748b', fontSize: 13, margin: '4px 0 0' }}>
-            Auto-refreshes every 8s · Last updated {lastRefresh.toLocaleTimeString()}
-          </p>
+          <p style={{ color: '#64748b', fontSize: 13, margin: '4px 0 0' }}>Live — updates instantly via Firestore</p>
         </div>
         <a href="/" style={{ fontSize: 13, color: '#2563eb', textDecoration: 'none', fontWeight: 600 }}>← Back to app</a>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginBottom: 32 }}>
         {[
-          { label: 'Active now', value: active.length, color: '#f59e0b' },
-          { label: 'Total sessions', value: sessions.length, color: '#2563eb' },
-          { label: 'Connected', value: sessions.filter(s => s.status === 'connected').length, color: '#16a34a' },
-          { label: 'Failed', value: sessions.filter(s => s.status === 'failed').length, color: '#ef4444' },
+          { label: 'Active now',     value: active.length,                                         color: '#f59e0b' },
+          { label: 'Total sessions', value: sessions.length,                                       color: '#2563eb' },
+          { label: 'Connected',      value: sessions.filter(s => s.status === 'connected').length, color: '#16a34a' },
+          { label: 'Failed',         value: sessions.filter(s => s.status === 'failed').length,    color: '#ef4444' },
         ].map(stat => (
           <div key={stat.label} style={{ background: '#fff', borderRadius: 14, padding: '20px 24px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', borderTop: `3px solid ${stat.color}` }}>
             <div style={{ fontSize: 28, fontWeight: 800, color: stat.color }}>{stat.value}</div>
