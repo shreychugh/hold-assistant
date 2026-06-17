@@ -20,6 +20,7 @@ export default function DashboardPage() {
   const [sessions, setSessions] = useState<Session[]>([])
   const [loading, setLoading] = useState(true)
   const [cancelling, setCancelling] = useState<string | null>(null)
+  const [cancelled, setCancelled] = useState<string | null>(null)
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
 
   const fetchSessions = useCallback(async () => {
@@ -38,13 +39,15 @@ export default function DashboardPage() {
 
   async function cancelSession(sessionId: string) {
     setCancelling(sessionId)
-    await fetch('/api/session/cancel', {
+    const res = await fetch('/api/session/cancel', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sessionId }),
     })
+    if (res.ok) setCancelled(sessionId)
     await fetchSessions()
     setCancelling(null)
+    setTimeout(() => setCancelled(null), 3000)
   }
 
   const active = sessions.filter(s => ACTIVE_STATUSES.includes(s.status))
@@ -81,19 +84,21 @@ export default function DashboardPage() {
         </td>
         <td style={{ padding: '12px 16px' }}>
           {isActive && (
-            <button
-              onClick={() => cancelSession(s.sessionId)}
-              disabled={cancelling === s.sessionId}
-              style={{
-                fontSize: 12, fontWeight: 600, padding: '5px 14px', borderRadius: 8,
-                background: cancelling === s.sessionId ? '#f1f5f9' : '#fef2f2',
-                color: cancelling === s.sessionId ? '#94a3b8' : '#dc2626',
-                border: `1px solid ${cancelling === s.sessionId ? '#e2e8f0' : '#fecaca'}`,
-                cursor: cancelling === s.sessionId ? 'not-allowed' : 'pointer',
-              }}
-            >
-              {cancelling === s.sessionId ? 'Cancelling…' : 'Cancel'}
-            </button>
+            cancelled === s.sessionId
+              ? <span style={{ fontSize: 12, fontWeight: 600, color: '#16a34a' }}>Cancelled ✓</span>
+              : <button
+                  onClick={() => cancelSession(s.sessionId)}
+                  disabled={cancelling === s.sessionId}
+                  style={{
+                    fontSize: 12, fontWeight: 600, padding: '5px 14px', borderRadius: 8,
+                    background: cancelling === s.sessionId ? '#f1f5f9' : '#fef2f2',
+                    color: cancelling === s.sessionId ? '#94a3b8' : '#dc2626',
+                    border: `1px solid ${cancelling === s.sessionId ? '#e2e8f0' : '#fecaca'}`,
+                    cursor: cancelling === s.sessionId ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  {cancelling === s.sessionId ? 'Cancelling…' : 'Cancel'}
+                </button>
           )}
         </td>
       </tr>
