@@ -54,10 +54,10 @@ export async function getSessionByCallSid(callSid: string): Promise<Session | nu
 export async function getAllSessions(limit = 50): Promise<Session[]> {
   const snap = await db()
     .collection('sessions')
-    .orderBy('createdAt', 'desc')
     .limit(limit)
     .get()
-  return snap.docs.map(d => d.data() as Session)
+  const sessions = snap.docs.map(d => d.data() as Session)
+  return sessions.sort((a, b) => b.createdAt - a.createdAt)
 }
 
 export async function hasActiveSession(userPhone: string): Promise<boolean> {
