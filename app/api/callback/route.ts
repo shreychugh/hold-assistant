@@ -11,13 +11,17 @@ export async function POST(req: NextRequest) {
   const sessionId = req.nextUrl.searchParams.get('sessionId')
   if (!sessionId) return xml('<Hangup/>')
 
-  const session = await getSession(sessionId)
-  if (!session) return xml('<Hangup/>')
+  const body = await req.text()
+  const params = new URLSearchParams(body)
+  const callStatus = params.get('CallStatus')
 
-  // Already connected — ignore duplicate status callbacks
-  if (session.status === 'connected') {
+  // Status callbacks (initiated, ringing, completed) — not the actual answer event
+  if (callStatus && callStatus !== 'in-progress') {
     return new NextResponse('', { status: 200 })
   }
+
+  const session = await getSession(sessionId)
+  if (!session) return xml('<Hangup/>')
 
   await updateSession(sessionId, { status: 'connected' })
 
