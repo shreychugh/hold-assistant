@@ -50,6 +50,10 @@ Goal: Get a working link in front of real users to see end-to-end signal. Ship f
 
 - [ ] **DNC / Terms page** — users consent to receive one automated callback from your system when an agent is found.
 
+### Security
+
+- [ ] **Password-protect the admin dashboard** — add Next.js middleware that checks a cookie against `DASHBOARD_PASSWORD` env var. Redirect `/dashboard` to `/dashboard/login` if not authenticated. Prevents public access once domain is live.
+
 ### Launch
 
 - [ ] **Add feedback link on status page** — after connected or failed, show "How did it work? →" link to a Google Form. This is your only user signal early on.
