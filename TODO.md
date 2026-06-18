@@ -93,3 +93,5 @@ Goal: Get a working link in front of real users to see end-to-end signal. Ship f
 - [ ] **AI-driven IVR navigation** — replace hardcoded scripts with live speech detection so any new company works automatically.
 
 - [ ] **More companies** — insurance, airlines, government lines beyond CRA.
+
+- [ ] **Patent (full utility)** — convert provisional to full utility patent once business has traction. Covers: method of auto-navigating IVR + detecting human agent + bridging callback. Hire patent attorney (~$15–20k total). Note: file provisional patent BEFORE Phase 1 public launch to lock priority date cheaply (~$2k).

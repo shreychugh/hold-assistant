@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
   }
 
   const transcribeUrl = `${base}/api/webhook?sessionId=${sessionId}&amp;action=transcribe`
-  const recordXml = `<Record maxLength="3" action="${transcribeUrl}" method="POST" playBeep="false"/>`
+  const recordXml = `<Record maxLength="2" action="${transcribeUrl}" method="POST" playBeep="false"/>`
 
   // Agent detection via Deepgram — fires after each 3-second recording clip
   if (action === 'transcribe') {
@@ -85,14 +85,15 @@ export async function POST(req: NextRequest) {
     if (!lower) return xml(recordXml)
 
     const wordCount = lower.split(/\s+/).length
-    const isRecording = RECORDING_PHRASES.some(p => lower.includes(p)) || wordCount > 12
+    const isRecording = RECORDING_PHRASES.some(p => lower.includes(p)) || wordCount > 8
 
     if (isRecording) {
-      console.log('[transcribe] Hold music — keep recording')
+      const reason = RECORDING_PHRASES.find(p => lower.includes(p)) ? 'phrase match' : `word count ${wordCount}`
+      console.log(`[transcribe] Hold music (${reason}) — keep recording`)
       return xml(recordXml)
     }
 
-    console.log('[transcribe] Agent detected — bridging')
+    console.log('[transcribe] AGENT detected — bridging')
     await updateSession(sessionId, { status: 'agent_found' })
 
     const callbackUrl = `${base}/api/callback?sessionId=${sessionId}`
@@ -104,7 +105,10 @@ export async function POST(req: NextRequest) {
       console.error('[transcribe] makeCall failed:', err)
     }
 
-    return xml(`<Dial><Conference startConferenceOnEnter="true" endConferenceOnExit="false">${sessionId}</Conference></Dial>`)
+    // startConferenceOnEnter="false" keeps the agent waiting silently until the user joins.
+    // If "true", the conference starts immediately, agent hears silence and hangs up
+    // before the user's callback even rings.
+    return xml(`<Dial><Conference startConferenceOnEnter="false" endConferenceOnExit="false" waitUrl="">${sessionId}</Conference></Dial>`)
   }
 
   // Initial call connected — navigate IVR then listen for agent
