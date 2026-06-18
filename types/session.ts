@@ -5,6 +5,7 @@ export type SessionStatus =
   | 'waiting'
   | 'agent_found'
   | 'connected'
+  | 'completed'
   | 'failed'
   | 'cancelled'
 

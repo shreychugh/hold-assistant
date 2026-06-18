@@ -71,7 +71,7 @@ export default function StatusPage({ params }: { params: { sessionId: string } }
   const currentStep = STATUS_STEPS.findIndex(s => s.status === session.status)
   const isFailed = session.status === 'failed'
   const isCancelled = session.status === 'cancelled'
-  const isDone = session.status === 'connected'
+  const isDone = session.status === 'connected' || session.status === 'completed'
   const isTerminal = isDone || isFailed || isCancelled
   const ACTIVE_STATUSES: SessionStatus[] = ['initiated', 'calling', 'navigating', 'waiting', 'agent_found']
   const isActive = ACTIVE_STATUSES.includes(session.status)

@@ -11,6 +11,7 @@ function xml(content: string) {
 }
 
 const RECORDING_PHRASES = [
+  // Long hold phrases
   'for holding', 'for your patience', 'for continuing to hold',
   'your call is important', 'next available', 'remain on the line',
   'you can also manage', 'we apologize', 'calls are answered',
@@ -18,6 +19,12 @@ const RECORDING_PHRASES = [
   'voice verification', 'voice for id', 'answered by the next',
   'respectful', 'disrespectful', 'behavior will not be tolerated',
   'our employees', 'caring environment',
+  // Short hold phrases (would otherwise slip under the word count threshold)
+  'please hold', 'hold please', 'one moment', 'just a moment',
+  'right with you', 'with you shortly', 'be with you', 'stand by',
+  'all agents', 'currently busy', 'wait time', 'estimated wait',
+  'experiencing high', 'higher than normal', 'unusual volume',
+  'thank you for holding', 'thank you for waiting',
 ]
 
 export async function POST(req: NextRequest) {
