@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
   if (!session) return xml('<Hangup/>')
 
   // Stop if session is already terminal
-  if (session.status === 'agent_found' || session.status === 'connected') {
+  if (session.status === 'agent_found' || session.status === 'connected' || session.status === 'completed') {
     return new NextResponse('', { status: 200 })
   }
   if (session.status === 'failed' || session.status === 'cancelled') {
